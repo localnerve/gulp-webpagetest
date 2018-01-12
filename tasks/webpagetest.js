@@ -1,20 +1,23 @@
 const PLUGIN_NAME = 'gulp-webpagetest';
 
-var _           = require('lodash'),
-    chalk       = require('chalk'),
-    fs          = require('fs'),
-    getTime     = require('../utils/getTime'),
-    gulp        = require('gulp'),
-    gutil       = require('gulp-util'),
-    http        = require('http'),
-    WebPageTest = require('webpagetest');
+var isPlainObject = require('lodash.isplainobject'),
+    chalk         = require('chalk'),
+    fs            = require('fs'),
+    getTime       = require('../utils/getTime'),
+    gulp          = require('gulp'),
+    gutil         = {
+      log:          require('fancy-log'),
+      PluginError:  require('plugin-error')
+    },
+    http          = require('http'),
+    WebPageTest   = require('webpagetest');
 
 var gulpWebPageTest = function(options) {
   if (!options) {
     throw new gutil.PluginError(PLUGIN_NAME, 'When calling webpagetest(options), options parameter is MANDATORY.');
   }
 
-  if (!_.isPlainObject(options)) {
+  if (!isPlainObject(options)) {
     throw new gutil.PluginError(PLUGIN_NAME, 'When calling webpagetest(options), options MUST be an object.');
   }
 
@@ -291,7 +294,7 @@ var gulpWebPageTest = function(options) {
     var webPageTest = new WebPageTest(wptInstance, key);
 
     return webPageTest.runTest(url, webPageTestSettings, function(responseError, response) {
-      var testId = responseError.error.testId;
+      var testId = responseError.error && responseError.error.testId;
 
       var checkStatus = function(callback) {
         var statusCode;
@@ -313,7 +316,11 @@ var gulpWebPageTest = function(options) {
         });
       };
 
-      return checkStatus(callback);
+      if (testId) {
+        return checkStatus(callback);
+      } else {
+        gutil.log(responseError.statusCode, responseError.statusText);
+      }
     });
   };
 };
